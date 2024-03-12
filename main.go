@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-func index(writer http.ResponseWriter, r *http.Request) {
+func index(writer http.ResponseWriter, req *http.Request) {
 	_, err := fmt.Fprintf(writer, "Hello, World!")
 	if err != nil {
 		return
