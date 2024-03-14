@@ -1,6 +1,8 @@
 package main
 
-import "bytes"
+import (
+	"bytes"
+)
 
 func convertToValidJSON(data string) string {
 	var buf bytes.Buffer
@@ -11,27 +13,22 @@ func convertToValidJSON(data string) string {
 	var detectionBuffer bytes.Buffer
 
 	for _, chr := range data {
-		if !(isInString || isCommaDetectionEnabled) {
-			buf.WriteRune(chr)
-			continue
-		}
-
 		if chr == '"' && !isEscapedChar {
 			isInString = !isInString
 			if isCommaDetectionEnabled {
-				isInString = !isInString
 				isCommaDetectionEnabled = false
 
 				buf.WriteRune(',')
 				buf.WriteString(detectionBuffer.String())
 			}
 
-			buf.WriteRune('"')
+			//buf.WriteRune('"')
 		}
 
 		if chr == ',' && !isInString {
 			isCommaDetectionEnabled = true
 			detectionBuffer.Reset()
+			isEscapedChar = false
 			continue
 		}
 
@@ -43,20 +40,22 @@ func convertToValidJSON(data string) string {
 			}
 		} else if isCommaDetectionEnabled {
 			detectionBuffer.WriteRune(chr)
-			if chr == '}' {
+			if chr == '}' || chr == ']' {
 				isCommaDetectionEnabled = false
 				buf.WriteString(detectionBuffer.String())
-			} else if !(chr == ' ' || chr == '\n' || chr == '\t' || chr == ',') {
+			} else if !(chr == ' ' || chr == '\n' || chr == '\t' || chr == '\r' || chr == ',') {
 				isCommaDetectionEnabled = false
 				buf.WriteRune(',')
 				buf.WriteString(detectionBuffer.String())
 			}
 		} else {
-
+			buf.WriteRune(chr)
 		}
 
 		if chr == '\\' {
 			isEscapedChar = true
+		} else if isEscapedChar {
+			isEscapedChar = false
 		}
 	}
 

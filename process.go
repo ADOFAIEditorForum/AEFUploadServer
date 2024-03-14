@@ -3,6 +3,7 @@ package main
 import (
 	"archive/zip"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -40,6 +41,49 @@ func detectADOFAIFile(destination string) string {
 	return adofaiFileName
 }
 
+var pathMap = map[rune]int{
+	'R': 0,
+	'p': 15,
+	'J': 30,
+	'E': 45,
+	'T': 60,
+	'o': 75,
+	'U': 90,
+	'q': 105,
+	'G': 120,
+	'Q': 135,
+	'H': 150,
+	'W': 165,
+	'L': 180,
+	'x': 195,
+	'N': 210,
+	'Z': 225,
+	'F': 240,
+	'V': 255,
+	'D': 270,
+	'Y': 285,
+	'B': 300,
+	'C': 315,
+	'M': 330,
+	'A': 345,
+	'!': 999,
+}
+
+var vertexMap = map[rune]struct {
+	int
+	bool
+}{
+	'5': {5, false},
+	'6': {5, true},
+	'7': {7, false},
+	'8': {7, true},
+}
+
+func getVertex(path rune) (int, bool) {
+	result := vertexMap[path]
+	return result.int, result.bool
+}
+
 func process(filename string, id int64) {
 	dest := fmt.Sprintf("level%d", id)
 
@@ -62,7 +106,52 @@ func process(filename string, id int64) {
 	adofaiLevelStr := string(trimmedBytes)
 
 	adofaiLevelStr = convertToValidJSON(adofaiLevelStr)
-	jsonData := []byte(adofaiLevelStr)
+	err = os.WriteFile("log.txt", []byte(adofaiLevelStr), 0644)
+	if err != nil {
+		return
+	}
+
+	var adofaiLevelJson map[string]interface{}
+	err = json.Unmarshal([]byte(adofaiLevelStr), &adofaiLevelJson)
+
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+
+	if val, ok := adofaiLevelJson["pathData"]; ok {
+		var angleData []float32
+		pathData := val.(string)
+		for _, path := range pathData {
+			if angle, ok := pathMap[path]; ok {
+				angleData = append(angleData, float32(angle))
+			} else {
+				vertex, reverse := getVertex(path)
+				vertexCalc := float32(vertex)
+
+				relativeAngle := 180.0 - 180.0*(vertexCalc-2)/vertexCalc
+				if reverse {
+					relativeAngle = -relativeAngle
+				}
+
+				angleData = append(angleData, angleData[len(angleData)-1]+relativeAngle)
+			}
+		}
+
+		delete(adofaiLevelJson, "pathData")
+		adofaiLevelJson["angleData"] = angleData
+	}
+
+	jsonData, err := json.Marshal(adofaiLevelJson)
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+
+	err = os.WriteFile(filepath.Join(dest, adofaiFileName), jsonData, 0644)
+	if err != nil {
+		return
+	}
 
 	apiURL := "http://localhost:3677/level"
 	request, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(jsonData))
