@@ -1,7 +1,6 @@
 package main
 
 import (
-	"archive/zip"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -9,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -84,6 +84,98 @@ func getVertex(path rune) (int, bool) {
 	return result.int, result.bool
 }
 
+var boolCheckSettings = []string{
+	"separateCountdownTime", "seizureWarning",
+	"showDefaultBGIfNoImage", "showDefaultBGTile",
+	"imageSmoothing", "lockRot", "loopBG",
+	"pulseOnFloor", "loopVideo", "floorIconOutlines", "stickToFloors",
+	"legacyFlash", "legacyCamRelativeTo", "legacySpriteTiles",
+}
+
+var settingsDefault = map[string]interface{}{
+	"version":                 13,
+	"artist":                  "",
+	"specialArtistType":       "None",
+	"artistPermission":        "",
+	"song":                    "",
+	"author":                  "",
+	"separateCountdownTime":   true,
+	"previewImage":            "",
+	"previewIcon":             "",
+	"previewIconColor":        "003f52",
+	"previewSongStart":        0,
+	"previewSongDuration":     10,
+	"seizureWarning":          false,
+	"levelDesc":               "",
+	"levelTags":               "",
+	"artistLinks":             "",
+	"speedTrialAim":           0,
+	"difficulty":              1,
+	"requiredMods":            []string{},
+	"songFilename":            "",
+	"bpm":                     100,
+	"volume":                  100,
+	"offset":                  0,
+	"pitch":                   100,
+	"hitsound":                "Kick",
+	"hitsoundVolume":          100,
+	"countdownTicks":          4,
+	"trackColorType":          "Single",
+	"trackColor":              "debb7b",
+	"secondaryTrackColor":     "ffffff",
+	"trackColorAnimDuration":  2,
+	"trackColorPulse":         "None",
+	"trackPulseLength":        10,
+	"trackStyle":              "Standard",
+	"trackTexture":            "",
+	"trackTextureScale":       1,
+	"trackGlowIntensity":      100,
+	"trackAnimation":          "None",
+	"beatsAhead":              3,
+	"trackDisappearAnimation": "None",
+	"beatsBehind":             4,
+	"backgroundColor":         "000000",
+	"showDefaultBGIfNoImage":  true,
+	"showDefaultBGTile":       true,
+	"defaultBGTileColor":      "101121",
+	"defaultBGShapeType":      "Default",
+	"defaultBGShapeColor":     "ffffff",
+	"bgImage":                 "",
+	"bgImageColor":            "ffffff",
+	"parallax":                []int{100, 100},
+	"bgDisplayMode":           "FitToScreen",
+	"imageSmoothing":          true,
+	"lockRot":                 false,
+	"loopBG":                  false,
+	"scalingRatio":            100,
+	"relativeTo":              "Player",
+	"position":                []int{0, 0},
+	"rotation":                0,
+	"zoom":                    100,
+	"pulseOnFloor":            true,
+	"startCamLowVFX":          false,
+	"bgVideo":                 "",
+	"loopVideo":               false,
+	"vidOffset":               0,
+	"floorIconOutlines":       false,
+	"stickToFloors":           true,
+	"planetEase":              "Linear",
+	"planetEaseParts":         1,
+	"planetEasePartBehavior":  "Mirror",
+	"customClass":             "",
+	"defaultTextColor":        "ffffff",
+	"defaultTextShadowColor":  "00000050",
+	"congratsText":            "",
+	"perfectText":             "",
+	"legacyFlash":             false,
+	"legacyCamRelativeTo":     false,
+	"legacySpriteTiles":       false,
+}
+
+var settingsConversion = map[string]string{
+	"useLegacyFlash": "legacyFlash",
+}
+
 func process(filename string, id int64) {
 	dest := fmt.Sprintf("level%d", id)
 
@@ -142,6 +234,34 @@ func process(filename string, id int64) {
 		adofaiLevelJson["angleData"] = angleData
 	}
 
+	adofaiSettings := adofaiLevelJson["settings"].(map[string]interface{})
+	for original, target := range settingsConversion {
+		if _, ok := adofaiSettings[original]; ok {
+			adofaiSettings[target] = adofaiSettings[original]
+			delete(adofaiSettings, original)
+		}
+	}
+
+	for settingName, settingValue := range settingsDefault {
+		if _, ok := adofaiSettings[settingName]; !ok {
+			adofaiSettings[settingName] = settingValue
+		}
+	}
+
+	for _, boolCheckKey := range boolCheckSettings {
+		if content, isString := adofaiSettings[boolCheckKey].(string); isString {
+			switch content {
+			case "Enabled":
+				adofaiSettings[boolCheckKey] = true
+			case "Disabled":
+				adofaiSettings[boolCheckKey] = false
+			default:
+				println(boolCheckKey, content)
+				return
+			}
+		}
+	}
+
 	jsonData, err := json.Marshal(adofaiLevelJson)
 	if err != nil {
 		log.Fatal(err)
@@ -166,7 +286,7 @@ func process(filename string, id int64) {
 	}
 
 	responseBody, err := io.ReadAll(response.Body)
-	println(responseBody)
+	println(string(responseBody))
 
 	return
 }
