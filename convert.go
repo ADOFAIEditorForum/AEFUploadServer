@@ -53,7 +53,7 @@ func convertToValidJSON(data string) string {
 		}
 
 		if chr == '\\' {
-			isEscapedChar = true
+			isEscapedChar = !isEscapedChar
 		} else if isEscapedChar {
 			isEscapedChar = false
 		}
