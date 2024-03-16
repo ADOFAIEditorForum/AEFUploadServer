@@ -24,21 +24,27 @@ func detectADOFAIFile(destination string) string {
 		return ""
 	}
 
-	for _, file := range files {
-		name := file.Name()
+	if len(files) == 1 && files[0].IsDir() {
+		fileName := files[0].Name()
+		target := filepath.Join(destination, fileName)
+		return filepath.Join(fileName, detectADOFAIFile(target))
+	} else {
+		for _, file := range files {
+			name := file.Name()
 
-		if strings.HasSuffix(name, ".adofai") {
-			if slices.Contains(defaultFileList, name) {
-				adofaiFileName = name
-				break
-			}
-			if adofaiFileName == "" && name != "backup.adofai" {
-				adofaiFileName = name
+			if strings.HasSuffix(name, ".adofai") {
+				if slices.Contains(defaultFileList, name) {
+					adofaiFileName = name
+					break
+				}
+				if adofaiFileName == "" && name != "backup.adofai" {
+					adofaiFileName = name
+				}
 			}
 		}
-	}
 
-	return adofaiFileName
+		return adofaiFileName
+	}
 }
 
 var pathMap = map[rune]int{
