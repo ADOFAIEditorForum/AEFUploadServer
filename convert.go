@@ -10,6 +10,11 @@ func convertToValidJSON(data string) string {
 	isInString := false
 	isEscapedChar := false
 	isCommaDetectionEnabled := false
+
+	listLayer := 0
+	bracketsDetection := false
+	listLineSeparation := false
+
 	var detectionBuffer bytes.Buffer
 
 	for _, chr := range data {
@@ -50,6 +55,76 @@ func convertToValidJSON(data string) string {
 			}
 		} else {
 			buf.WriteRune(chr)
+		}
+
+		if chr == '\\' {
+			isEscapedChar = !isEscapedChar
+		} else if isEscapedChar {
+			isEscapedChar = false
+		}
+	}
+
+	isInString = false
+	isEscapedChar = false
+
+	data = buf.String()
+
+	buf.Reset()
+	detectionBuffer.Reset()
+
+	for _, chr := range data {
+		if !bracketsDetection {
+			buf.WriteRune(chr)
+		}
+
+		if !isEscapedChar && chr == '"' {
+			isInString = !isInString
+		}
+
+		if listLayer > 0 {
+			if bracketsDetection {
+				detectionBuffer.WriteRune(chr)
+
+				if chr == ',' || chr == ']' {
+					bracketsDetection = false
+					buf.WriteString(detectionBuffer.String())
+					detectionBuffer.Reset()
+
+					continue
+				}
+
+				if chr == '\n' {
+					listLineSeparation = true
+				}
+
+				if !(chr == ' ' || chr == '\n' || chr == '\t' || chr == '\r') {
+					if chr == '{' && listLineSeparation {
+						buf.WriteRune(',')
+						buf.WriteString(detectionBuffer.String())
+
+						detectionBuffer.Reset()
+					} else {
+						buf.WriteString(detectionBuffer.String())
+						detectionBuffer.Reset()
+					}
+				}
+			}
+
+			if chr == '}' {
+				listLineSeparation = false
+				bracketsDetection = true
+			}
+		} else {
+			listLineSeparation = false
+			bracketsDetection = false
+		}
+
+		if !isInString {
+			if chr == '[' {
+				listLayer++
+			} else if chr == ']' {
+				listLayer--
+			}
 		}
 
 		if chr == '\\' {

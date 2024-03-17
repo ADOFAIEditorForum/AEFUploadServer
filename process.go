@@ -205,10 +205,11 @@ func process(filename string, id int64) {
 	adofaiLevelStr := string(trimmedBytes)
 
 	adofaiLevelStr = convertToValidJSON(adofaiLevelStr)
-	/*err = os.WriteFile("log.txt", []byte(adofaiLevelStr), 0644)
+	err = os.WriteFile("log.txt", []byte(adofaiLevelStr), 0644)
 	if err != nil {
+		log.Fatal(err)
 		return
-	}*/
+	}
 
 	var adofaiLevelJson map[string]interface{}
 	err = json.Unmarshal([]byte(adofaiLevelStr), &adofaiLevelJson)
@@ -228,7 +229,7 @@ func process(filename string, id int64) {
 				vertex, reverse := getVertex(path)
 				vertexCalc := float32(vertex)
 
-				relativeAngle := 180.0 - 180.0*(vertexCalc-2)/vertexCalc
+				relativeAngle := 180.0 - 180.0*(vertexCalc-2)/vertexCalc // TODO: Fix angleData Conversion
 				if reverse {
 					relativeAngle = -relativeAngle
 				}
@@ -267,6 +268,24 @@ func process(filename string, id int64) {
 				return
 			}
 		}
+	}
+
+	if _, ok := adofaiLevelJson["decorations"]; !ok {
+		var newActions []map[string]interface{}
+		var decorations []map[string]interface{}
+
+		actions := adofaiLevelJson["actions"].([]interface{})
+		for _, action := range actions {
+			action := action.(map[string]interface{})
+			if action["eventType"] == "AddDecoration" || action["eventType"] == "AddObject" {
+				decorations = append(decorations, action)
+			} else {
+				newActions = append(newActions, action)
+			}
+		}
+
+		adofaiLevelJson["actions"] = newActions
+		adofaiLevelJson["decorations"] = decorations
 	}
 
 	jsonData, err := json.Marshal(adofaiLevelJson)
