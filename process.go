@@ -222,9 +222,19 @@ func process(filename string, id int64) {
 	if val, ok := adofaiLevelJson["pathData"]; ok {
 		var angleData []float32
 		pathData := val.(string)
+		lastAngle := float32(0)
+
 		for _, path := range pathData {
 			if angle, ok := pathMap[path]; ok {
-				angleData = append(angleData, float32(angle))
+				fAngle := float32(angle)
+				angleData = append(angleData, fAngle)
+				if angle != 999 {
+					lastAngle = fAngle
+				} else {
+					lastAngle -= 180
+				}
+
+				// NOTE: Verify Fix
 			} else {
 				vertex, reverse := getVertex(path)
 				vertexCalc := float32(vertex)
@@ -234,7 +244,8 @@ func process(filename string, id int64) {
 					relativeAngle = -relativeAngle
 				}
 
-				angleData = append(angleData, angleData[len(angleData)-1]+relativeAngle)
+				angleData = append(angleData, lastAngle+relativeAngle)
+				lastAngle += relativeAngle
 			}
 		}
 
