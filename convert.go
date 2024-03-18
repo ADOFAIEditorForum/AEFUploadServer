@@ -66,6 +66,7 @@ func convertToValidJSON(data string) string {
 
 	isInString = false
 	isEscapedChar = false
+	bracketCommaMissingDetection := false
 
 	data = buf.String()
 
@@ -73,7 +74,7 @@ func convertToValidJSON(data string) string {
 	detectionBuffer.Reset()
 
 	for _, chr := range data {
-		if !bracketsDetection {
+		if !bracketsDetection && !bracketCommaMissingDetection {
 			buf.WriteRune(chr)
 		}
 
@@ -89,6 +90,11 @@ func convertToValidJSON(data string) string {
 					bracketsDetection = false
 					buf.WriteString(detectionBuffer.String())
 					detectionBuffer.Reset()
+
+					if chr == ']' {
+						listLayer--
+						bracketCommaMissingDetection = true
+					}
 
 					continue
 				}
@@ -119,11 +125,37 @@ func convertToValidJSON(data string) string {
 			bracketsDetection = false
 		}
 
+		// NOTE: This code is to fix the `]\n\t"decorations": [` issue
+		if bracketCommaMissingDetection {
+			detectionBuffer.WriteRune(chr)
+			if listLayer == 0 {
+				if chr == ',' || chr == '}' || chr == ']' {
+					buf.WriteString(detectionBuffer.String())
+					detectionBuffer.Reset()
+
+					bracketCommaMissingDetection = false
+				} else if !(chr == ' ' || chr == '\n' || chr == '\t' || chr == '\r') {
+					buf.WriteRune(',')
+					buf.WriteString(detectionBuffer.String())
+					bracketCommaMissingDetection = false
+
+					detectionBuffer.Reset()
+				}
+			} else {
+				buf.WriteString(detectionBuffer.String())
+				detectionBuffer.Reset()
+
+				bracketCommaMissingDetection = false
+			}
+		}
+
 		if !isInString {
 			if chr == '[' {
 				listLayer++
 			} else if chr == ']' {
 				listLayer--
+				bracketCommaMissingDetection = true
+				detectionBuffer.Reset()
 			}
 		}
 
