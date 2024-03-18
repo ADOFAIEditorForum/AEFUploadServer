@@ -239,7 +239,7 @@ func process(filename string, id int64) {
 				vertex, reverse := getVertex(path)
 				vertexCalc := float32(vertex)
 
-				relativeAngle := 180.0 - 180.0*(vertexCalc-2)/vertexCalc // TODO: Fix angleData Conversion
+				relativeAngle := 180.0 - 180.0*(vertexCalc-2)/vertexCalc
 				if reverse {
 					relativeAngle = -relativeAngle
 				}
