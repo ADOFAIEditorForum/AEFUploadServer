@@ -272,7 +272,8 @@ func process(filename string, id int64) {
 
 	if _, ok := adofaiLevelJson["decorations"]; !ok {
 		var newActions []map[string]interface{}
-		var decorations []map[string]interface{}
+		//goland:noinspection GoPreferNilSlice
+		var decorations = []map[string]interface{}{}
 
 		actions := adofaiLevelJson["actions"].([]interface{})
 		for _, action := range actions {
