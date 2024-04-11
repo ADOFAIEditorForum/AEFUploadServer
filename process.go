@@ -323,8 +323,17 @@ func process(filename string, id int64) {
 		return
 	}
 
+	var uploadInfo map[string]interface{}
 	responseBody, err := io.ReadAll(response.Body)
+	err = json.Unmarshal(responseBody, &uploadInfo)
+	if err != nil {
+		return
+	}
+
 	println(string(responseBody))
+	directory := filepath.Join(dest, filepath.Dir(adofaiFileName))
+
+	go uploadAll(fmt.Sprintf("http://localhost:3677/upload/%s", uploadInfo["uploadID"]), directory, "")
 
 	return
 }
