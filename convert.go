@@ -38,10 +38,12 @@ func convertToValidJSON(data string) string {
 		}
 
 		if isInString {
-			if chr != '\n' {
-				buf.WriteRune(chr)
-			} else {
+			if chr == '\n' {
 				buf.WriteString("\\n")
+			} else if chr == '\t' {
+				buf.WriteString("\\t")
+			} else if chr != '\r' {
+				buf.WriteRune(chr)
 			}
 		} else if isCommaDetectionEnabled {
 			detectionBuffer.WriteRune(chr)
