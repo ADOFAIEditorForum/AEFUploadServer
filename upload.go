@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -19,6 +21,7 @@ var suffixMap = map[string]string{
 }
 
 func detectMIMEType(fileName string) string {
+	fileName = strings.ToLower(fileName)
 	for suffix, mimeType := range suffixMap {
 		if strings.HasSuffix(fileName, suffix) {
 			return mimeType
@@ -32,18 +35,24 @@ func uploadAll(url string, directory string, prefix string) {
 	transport := &http.Transport{
 		MaxIdleConnsPerHost: 40,
 		MaxConnsPerHost:     40,
-		MaxIdleConns:        100,
+		MaxIdleConns:        80,
 	}
 
 	client := &http.Client{
 		Transport: transport,
 	}
 
-	uploadFiles(url, directory, prefix, client)
+	filesDetected := uploadFiles(url, directory, prefix, client, 0, 0)
+	println(fmt.Sprintf("UPLOAD COMPLETE | %d files", filesDetected))
 	client.CloseIdleConnections()
+
+	err := os.RemoveAll(directory)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
-func uploadFiles(url string, directory string, prefix string, client *http.Client) {
+func uploadFiles(url string, directory string, prefix string, client *http.Client, filesDetected int32, depth int32) int32 {
 	println(directory)
 	files, err := os.ReadDir(directory)
 	if err != nil {
@@ -57,17 +66,23 @@ func uploadFiles(url string, directory string, prefix string, client *http.Clien
 
 		fileName := file.Name()
 		if file.IsDir() {
-			uploadFiles(url, filepath.Join(directory, fileName), prefix+fileName+"/", client)
+			filesDetected += uploadFiles(url, filepath.Join(directory, fileName), prefix+fileName+"/", client, 0, depth+1)
+			i++
+
 			continue
 		}
 
 		if strings.HasSuffix(fileName, ".adofai") {
+			i++
+
 			continue
 		}
 
 		mimeType := detectMIMEType(fileName)
 		if mimeType == "" {
 			println("Invalid File Type: " + fileName)
+			i++
+
 			continue
 		}
 
@@ -78,41 +93,66 @@ func uploadFiles(url string, directory string, prefix string, client *http.Clien
 
 		request, err := http.NewRequest("POST", url+"/"+prefix+fileName, bytes.NewBuffer(reqBody))
 		if request == nil {
-			continue
+			log.Fatal(err)
 		}
 
-		request.Close = true
+		// request.Close = true
 		request.Header.Set("Content-Type", mimeType)
 		response, err := client.Do(request)
 		if err != nil {
 			log.Fatal(err)
-			return
-		}
-
-		if err != nil {
-			log.Fatal(err)
-			return
 		}
 
 		responseBody, err := io.ReadAll(response.Body)
 		if err != nil {
 			log.Fatal(err)
-			return
 		}
 
 		err = response.Body.Close()
 		if err != nil {
 			log.Fatal(err)
-			return
 		}
 
+		println(prefix + fileName)
 		println(string(responseBody))
-		if string(responseBody) != "Success" {
-			println(prefix + fileName)
-		} else {
+		if string(responseBody) == "Success" {
+			filesDetected++
 			time.Sleep(10 * time.Millisecond)
 		}
 
 		i++
 	}
+
+	if depth <= 0 {
+		emptyData := []byte{}
+		request, err := http.NewRequest("DELETE", url, bytes.NewBuffer(emptyData))
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		response, err := client.Do(request)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		responseBody, err := io.ReadAll(response.Body)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		err = response.Body.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		println(string(responseBody))
+
+		var uploadInfo map[string]interface{}
+		err = json.Unmarshal(responseBody, &uploadInfo)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return filesDetected
 }
