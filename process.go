@@ -310,7 +310,7 @@ func process(filename string, id int64) {
 					}
 
 					alphaColor = calcNewAlpha(alphaColor)
-					adofaiSettings[colorCheckKey] = content[0:6] + strconv.FormatInt(alphaColor, 16)
+					adofaiSettings[colorCheckKey] = fmt.Sprintf("%s%02x", content[:6], alphaColor)
 				}
 			}
 		}
@@ -344,7 +344,7 @@ func process(filename string, id int64) {
 						}
 
 						alphaColor = calcNewAlpha(alphaColor)
-						action[colorCheckKey] = content[0:6] + strconv.FormatInt(alphaColor, 16)
+						action[colorCheckKey] = fmt.Sprintf("%s%02x", content[:6], alphaColor)
 					}
 				}
 			}
