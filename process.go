@@ -197,6 +197,7 @@ func calcNewAlpha(alpha int64) int64 {
 	return int64(math.Round(floatAlpha + (255-floatAlpha)*0.4))
 }
 
+//goland:noinspection GoPreferNilSlice
 func process(filename string, id int64) {
 	dest := fmt.Sprintf("level%d", id)
 
@@ -322,7 +323,7 @@ func process(filename string, id int64) {
 	}
 
 	// ColorTrack
-	var newActions []map[string]interface{}
+	var newActions = []map[string]interface{}{}
 	var decorations = []map[string]interface{}{}
 
 	actions := adofaiLevelJson["actions"].([]interface{})

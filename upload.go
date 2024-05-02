@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -52,7 +53,7 @@ func uploadAll(url string, directory string, prefix string) {
 	}
 }
 
-func uploadFiles(url string, directory string, prefix string, client *http.Client, filesDetected int32, depth int32) int32 {
+func uploadFiles(link string, directory string, prefix string, client *http.Client, filesDetected int32, depth int32) int32 {
 	println(directory)
 	files, err := os.ReadDir(directory)
 	if err != nil {
@@ -66,7 +67,7 @@ func uploadFiles(url string, directory string, prefix string, client *http.Clien
 
 		fileName := file.Name()
 		if file.IsDir() {
-			filesDetected += uploadFiles(url, filepath.Join(directory, fileName), prefix+fileName+"/", client, 0, depth+1)
+			filesDetected += uploadFiles(link, filepath.Join(directory, fileName), prefix+fileName+"/", client, 0, depth+1)
 			i++
 
 			continue
@@ -91,13 +92,15 @@ func uploadFiles(url string, directory string, prefix string, client *http.Clien
 			log.Fatal(err)
 		}
 
-		request, err := http.NewRequest("POST", url+"/"+prefix+fileName, bytes.NewBuffer(reqBody))
+		request, err := http.NewRequest("POST", link, bytes.NewBuffer(reqBody))
+
 		if request == nil {
 			log.Fatal(err)
 		}
 
 		// request.Close = true
 		request.Header.Set("Content-Type", mimeType)
+		request.Header.Set("File-Path", url.QueryEscape(prefix+fileName))
 		response, err := client.Do(request)
 		if err != nil {
 			log.Fatal(err)
@@ -125,7 +128,7 @@ func uploadFiles(url string, directory string, prefix string, client *http.Clien
 
 	if depth <= 0 {
 		emptyData := []byte{}
-		request, err := http.NewRequest("DELETE", url, bytes.NewBuffer(emptyData))
+		request, err := http.NewRequest("DELETE", link, bytes.NewBuffer(emptyData))
 		if err != nil {
 			log.Fatal(err)
 		}
