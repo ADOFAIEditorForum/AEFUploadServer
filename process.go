@@ -207,7 +207,7 @@ func process(filename string, id int64) {
 	adofaiLevelStr = convertToValidJSON(adofaiLevelStr)
 	err = os.WriteFile("log.txt", []byte(adofaiLevelStr), 0644)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		return
 	}
 
@@ -215,7 +215,7 @@ func process(filename string, id int64) {
 	err = json.Unmarshal([]byte(adofaiLevelStr), &adofaiLevelJson)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		return
 	}
 
@@ -319,7 +319,7 @@ func process(filename string, id int64) {
 	response, err := client.Do(request)
 
 	if err != nil {
-		println(err)
+		log.Println(err)
 		return
 	}
 

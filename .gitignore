@@ -3,3 +3,5 @@ level*
 log.txt
 *.exe
 *.dll
+
+AEFUploadServer
