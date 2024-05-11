@@ -213,6 +213,9 @@ func process(filename string, id int64) {
 	}
 
 	adofaiFileName := detectADOFAIFile(dest)
+	if adofaiFileName == "" { // There is no ADOFAI file
+		return
+	}
 
 	println(adofaiFileName)
 
