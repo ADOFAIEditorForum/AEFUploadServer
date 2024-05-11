@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -178,10 +180,24 @@ var settingsDefault = map[string]interface{}{
 	"legacySpriteTiles":       false,
 }
 
+var trackColorSettings = []string{
+	"trackColor", "secondaryTrackColor",
+}
+
 var settingsConversion = map[string]string{
 	"useLegacyFlash": "legacyFlash",
 }
 
+func calcNewAlpha(alpha int64) int64 {
+	// return int64(math.Round(float64(255-alpha) * 0.4))
+	floatAlpha := float64(alpha)
+	if floatAlpha <= 80.174 {
+		return int64(math.Round((1 - math.Pow((255-floatAlpha)/255, 6)) * 255 / 1.52240007032))
+	}
+	return int64(math.Round(floatAlpha + (255-floatAlpha)*0.4))
+}
+
+//goland:noinspection GoPreferNilSlice
 func process(filename string, id int64) {
 	dest := fmt.Sprintf("level%d", id)
 
@@ -219,10 +235,13 @@ func process(filename string, id int64) {
 		return
 	}
 
+	checkForTileAlpha := false
 	if val, ok := adofaiLevelJson["pathData"]; ok {
 		var angleData []float32
 		pathData := val.(string)
 		lastAngle := float32(0)
+
+		checkForTileAlpha = true
 
 		for _, path := range pathData {
 			if angle, ok := pathMap[path]; ok {
@@ -281,22 +300,64 @@ func process(filename string, id int64) {
 		}
 	}
 
-	if _, ok := adofaiLevelJson["decorations"]; !ok {
-		var newActions []map[string]interface{}
-		//goland:noinspection GoPreferNilSlice
-		var decorations = []map[string]interface{}{}
+	if checkForTileAlpha {
+		for _, colorCheckKey := range trackColorSettings {
+			if content, isString := adofaiSettings[colorCheckKey].(string); isString {
+				println("Detected: " + colorCheckKey + " = " + content)
+				if len(content) == 8 {
+					alphaColor, err := strconv.ParseInt(content[6:8], 16, 32)
+					if err != nil {
+						continue
+					}
 
-		actions := adofaiLevelJson["actions"].([]interface{})
-		for _, action := range actions {
-			action := action.(map[string]interface{})
-			if action["eventType"] == "AddDecoration" || action["eventType"] == "AddObject" {
-				decorations = append(decorations, action)
-			} else {
-				newActions = append(newActions, action)
+					alphaColor = calcNewAlpha(alphaColor)
+					adofaiSettings[colorCheckKey] = fmt.Sprintf("%s%02x", content[:6], alphaColor)
+				}
+			}
+		}
+	}
+
+	updateToDecorations := false
+	if _, ok := adofaiLevelJson["decorations"]; !ok {
+		updateToDecorations = true
+	}
+
+	// ColorTrack
+	var newActions = []map[string]interface{}{}
+	var decorations = []map[string]interface{}{}
+
+	actions := adofaiLevelJson["actions"].([]interface{})
+	for _, action := range actions {
+		isAction := true
+		action := action.(map[string]interface{})
+		if updateToDecorations && (action["eventType"] == "AddDecoration" || action["eventType"] == "AddObject") {
+			decorations = append(decorations, action)
+			isAction = false
+		}
+
+		if isAction && checkForTileAlpha && (action["eventType"] == "ColorTrack" || action["eventType"] == "RecolorTrack") {
+			for _, colorCheckKey := range trackColorSettings {
+				if content, isString := action[colorCheckKey].(string); isString {
+					if len(content) == 8 {
+						alphaColor, err := strconv.ParseInt(content[6:8], 16, 32)
+						if err != nil {
+							return
+						}
+
+						alphaColor = calcNewAlpha(alphaColor)
+						action[colorCheckKey] = fmt.Sprintf("%s%02x", content[:6], alphaColor)
+					}
+				}
 			}
 		}
 
-		adofaiLevelJson["actions"] = newActions
+		if isAction {
+			newActions = append(newActions, action)
+		}
+	}
+
+	adofaiLevelJson["actions"] = newActions
+	if updateToDecorations {
 		adofaiLevelJson["decorations"] = decorations
 	}
 
@@ -323,8 +384,17 @@ func process(filename string, id int64) {
 		return
 	}
 
+	var uploadInfo map[string]interface{}
 	responseBody, err := io.ReadAll(response.Body)
+	err = json.Unmarshal(responseBody, &uploadInfo)
+	if err != nil {
+		return
+	}
+
 	println(string(responseBody))
+	directory := filepath.Join(dest, filepath.Dir(adofaiFileName))
+
+	go uploadAll(fmt.Sprintf("http://localhost:3677/upload/%s", uploadInfo["uploadID"]), directory, "")
 
 	return
 }
