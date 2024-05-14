@@ -11,7 +11,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 )
 
 var suffixMap = map[string]string{
@@ -44,7 +43,7 @@ func uploadAll(url string, directory string, prefix string) {
 	}
 
 	filesDetected := uploadFiles(url, directory, prefix, client, 0, 0)
-	println(fmt.Sprintf("UPLOAD COMPLETE | %d files", filesDetected))
+	log.Println(fmt.Sprintf("UPLOAD COMPLETE | %d files", filesDetected))
 	client.CloseIdleConnections()
 
 	err := os.RemoveAll(directory)
@@ -54,7 +53,7 @@ func uploadAll(url string, directory string, prefix string) {
 }
 
 func uploadFiles(link string, directory string, prefix string, client *http.Client, filesDetected int32, depth int32) int32 {
-	println(directory)
+	log.Println(directory)
 	files, err := os.ReadDir(directory)
 	if err != nil {
 		log.Fatal(err)
@@ -120,7 +119,7 @@ func uploadFiles(link string, directory string, prefix string, client *http.Clie
 		println(string(responseBody))
 		if string(responseBody) == "Success" {
 			filesDetected++
-			time.Sleep(10 * time.Millisecond)
+			// time.Sleep(10 * time.Millisecond)
 		}
 
 		i++

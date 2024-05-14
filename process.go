@@ -217,7 +217,7 @@ func process(filename string, id int64) {
 		return
 	}
 
-	println(adofaiFileName)
+	log.Println(adofaiFileName)
 
 	data, err := os.ReadFile(filepath.Join(dest, adofaiFileName))
 	trimmedBytes := bytes.Trim(data, "\xef\xbb\xbf")
