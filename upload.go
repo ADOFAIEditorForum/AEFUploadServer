@@ -42,6 +42,8 @@ func uploadAll(url string, directory string, prefix string) {
 		Transport: transport,
 	}
 
+	log.Println(url)
+
 	filesDetected := uploadFiles(url, directory, prefix, client, 0, 0)
 	log.Println(fmt.Sprintf("UPLOAD COMPLETE | %d files", filesDetected))
 	client.CloseIdleConnections()
@@ -61,6 +63,8 @@ func uploadFiles(link string, directory string, prefix string, client *http.Clie
 
 	i := 0
 	fileLength := len(files)
+	log.Println(fmt.Sprintf("%d files", fileLength))
+
 	for i < fileLength {
 		file := files[i]
 
@@ -93,7 +97,7 @@ func uploadFiles(link string, directory string, prefix string, client *http.Clie
 
 		request, err := http.NewRequest("POST", link, bytes.NewBuffer(reqBody))
 
-		if request == nil {
+		if request == nil || err != nil {
 			log.Fatal(err)
 		}
 
