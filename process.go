@@ -214,6 +214,11 @@ func process(filename string, id int64) {
 
 	adofaiFileName := detectADOFAIFile(dest)
 	if adofaiFileName == "" { // There is no ADOFAI file
+		err := os.Remove(dest)
+		if err != nil {
+			log.Println(err)
+		}
+
 		return
 	}
 
