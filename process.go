@@ -207,7 +207,6 @@ func process(filename string, id int64) {
 		err := os.Remove(filename)
 		if err != nil {
 			log.Println(err)
-			return
 		}
 
 		return
@@ -220,7 +219,7 @@ func process(filename string, id int64) {
 
 	adofaiFileName := detectADOFAIFile(dest)
 	if adofaiFileName == "" { // There is no ADOFAI file
-		err := os.Remove(dest)
+		err := os.RemoveAll(dest)
 		if err != nil {
 			log.Println(err)
 		}
