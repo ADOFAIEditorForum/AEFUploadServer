@@ -413,7 +413,7 @@ func process(filename string, id int64) {
 }
 
 func unzipSource(filename string, destination string) error {
-	cmd := exec.Command("7z", "x", filename, "-o./"+destination)
+	cmd := exec.Command("7zz", "x", filename, "-o./"+destination)
 	if err := cmd.Run(); err != nil {
 		return err
 	}
