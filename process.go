@@ -203,7 +203,13 @@ func process(filename string, id int64) {
 
 	err := unzipSource(filename, dest)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		err := os.Remove(filename)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
 		return
 	}
 
