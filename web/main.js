@@ -1,5 +1,16 @@
 document.addEventListener("DOMContentLoaded", () => {
     const adofaiInput = document.getElementById("adofaiFile")
+    let uploadIndex = 0
+
+    function upload(input, reader, index) {
+        uploadIndex = index
+        if (index >= input.files.length) {
+            input.value = ""
+            return
+        }
+
+        reader.readAsArrayBuffer(input.files[index])
+    }
 
     adofaiInput.addEventListener("change", (event) => {
         const input = event.target
@@ -12,9 +23,9 @@ document.addEventListener("DOMContentLoaded", () => {
             })
                 .then((response) => response.text())
                 .then((result) => console.log(result))
-            input.value = ""
+            upload(input, reader, uploadIndex + 1)
         }
 
-        reader.readAsArrayBuffer(input.files[0])
+        upload(input, reader, 0)
     })
 })

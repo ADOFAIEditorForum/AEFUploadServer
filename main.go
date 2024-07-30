@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"net/http"
@@ -41,6 +42,23 @@ func index(writer http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func fixJSON(writer http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case "POST":
+		b, _ := io.ReadAll(req.Body)
+
+		trimmedBytes := bytes.Trim(b, "\xef\xbb\xbf")
+		adofaiLevelStr := string(trimmedBytes)
+
+		result := convertToValidJSON(adofaiLevelStr)
+
+		_, err2 := fmt.Fprintf(writer, result)
+		if err2 != nil {
+			return
+		}
+	}
+}
+
 func mainScript(writer http.ResponseWriter, _ *http.Request) {
 	content, err := os.ReadFile("./web/main.js")
 	if err != nil {
@@ -56,6 +74,8 @@ func mainScript(writer http.ResponseWriter, _ *http.Request) {
 func main() {
 	http.HandleFunc("/", index)
 	http.HandleFunc("/main.js", mainScript)
+
+	http.HandleFunc("/fix_json", fixJSON)
 
 	err := http.ListenAndServe("localhost:3676", nil)
 	println(err)
