@@ -79,6 +79,7 @@ func convertToValidJSON(data string) string {
 				}
 
 				trailingCommaDetection = false
+				commaCount = 0
 
 				buffer.WriteString(subBuffer.String())
 			}
@@ -98,7 +99,7 @@ func convertToValidJSON(data string) string {
 			subBuffer.Reset()
 		}
 
-		if chr == '"' && !isEscaped {
+		if !isEscaped && chr == '"' {
 			isInString = !isInString
 			skipStringCheck = isInString
 		}

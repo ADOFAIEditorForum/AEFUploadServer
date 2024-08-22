@@ -9,7 +9,22 @@ import (
 	"time"
 )
 
+func errorHandler(writer http.ResponseWriter, status int) {
+	writer.WriteHeader(status)
+	if status == http.StatusNotFound {
+		_, err := fmt.Fprint(writer, "404 Not Found")
+		if err != nil {
+			println(err)
+		}
+	}
+}
+
 func index(writer http.ResponseWriter, req *http.Request) {
+	if req.URL.Path != "/" {
+		errorHandler(writer, http.StatusNotFound)
+		return
+	}
+
 	switch req.Method {
 	case "GET":
 		content, err := os.ReadFile("./web/form.html")
