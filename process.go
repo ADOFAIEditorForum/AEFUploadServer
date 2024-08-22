@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strconv"
 	"strings"
@@ -412,8 +413,18 @@ func process(filename string, id int64) {
 	return
 }
 
+func get7zExec() string {
+	if runtime.GOOS == "windows" {
+		return "7z"
+	}
+
+	return "7zz"
+}
+
 func unzipSource(filename string, destination string) error {
-	cmd := exec.Command("7zz", "x", filename, "-o./"+destination)
+	execFile := get7zExec()
+
+	cmd := exec.Command(execFile, "x", filename, "-o./"+destination)
 	if err := cmd.Run(); err != nil {
 		return err
 	}
