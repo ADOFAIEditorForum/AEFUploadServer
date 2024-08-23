@@ -201,6 +201,7 @@ func calcNewAlpha(alpha int64) int64 {
 //goland:noinspection GoPreferNilSlice
 func process(filename string, id int64) {
 	dest := fmt.Sprintf("level%d", id)
+	println(filename)
 
 	err := unzipSource(filename, dest)
 	if err != nil {
