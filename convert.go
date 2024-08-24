@@ -15,7 +15,7 @@ This function must be flexible to any input and preserve the original JSON struc
 var controlCharacterMap = map[rune]string{
 	'\n': "\\n",
 	'\t': "\\t",
-	'\v': "\\v",
+	'\v': "\\u000b",
 	'\r': "",
 }
 
