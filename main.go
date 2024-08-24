@@ -190,7 +190,7 @@ func timeoutHandler(sessionID int64, timeoutDuration int64) {
 	delete(uploadSession.dataMap.data, sessionID)
 }
 
-var chunkSize = 1024 * 1024
+var chunkSize = 1024 * 1024 * 5
 
 func getSession(writer http.ResponseWriter, req *http.Request) {
 	switch req.Method {
