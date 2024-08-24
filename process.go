@@ -198,6 +198,13 @@ func calcNewAlpha(alpha int64) int64 {
 	return int64(math.Round(floatAlpha + (255-floatAlpha)*0.4))
 }
 
+func removeDest(dest string) {
+	err := os.RemoveAll(dest)
+	if err != nil {
+		log.Println(err)
+	}
+}
+
 //goland:noinspection GoPreferNilSlice
 func process(filename string, id int64) {
 	dest := fmt.Sprintf("level%d", id)
@@ -221,11 +228,7 @@ func process(filename string, id int64) {
 
 	adofaiFileName := detectADOFAIFile(dest)
 	if adofaiFileName == "" { // There is no ADOFAI file
-		err := os.RemoveAll(dest)
-		if err != nil {
-			log.Println(err)
-		}
-
+		removeDest(dest)
 		return
 	}
 
@@ -239,6 +242,7 @@ func process(filename string, id int64) {
 	err = os.WriteFile("log.txt", []byte(adofaiLevelStr), 0644)
 	if err != nil {
 		log.Println(err)
+		removeDest(dest)
 		return
 	}
 
@@ -247,6 +251,7 @@ func process(filename string, id int64) {
 
 	if err != nil {
 		log.Println(err)
+		removeDest(dest)
 		return
 	}
 
