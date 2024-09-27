@@ -99,23 +99,6 @@ func upload(writer http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func legacyFixJSON(writer http.ResponseWriter, req *http.Request) {
-	switch req.Method {
-	case "POST":
-		b, _ := io.ReadAll(req.Body)
-
-		trimmedBytes := bytes.Trim(b, "\xef\xbb\xbf")
-		adofaiLevelStr := string(trimmedBytes)
-
-		result := legacyConvertToValidJson(adofaiLevelStr)
-
-		_, err2 := fmt.Fprintf(writer, result)
-		if err2 != nil {
-			return
-		}
-	}
-}
-
 func fixJSON(writer http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case "POST":
@@ -223,8 +206,7 @@ func main() {
 	http.HandleFunc("/upload/", upload)
 
 	http.HandleFunc("/main.js", mainScript)
-	http.HandleFunc("/fix_json", legacyFixJSON)
-	http.HandleFunc("/fix_json/beta", fixJSON)
+	http.HandleFunc("/fix_json", fixJSON)
 
 	err := http.ListenAndServe("localhost:3676", nil)
 	println(err)
