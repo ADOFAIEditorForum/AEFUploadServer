@@ -116,13 +116,10 @@ func fixJSON(writer http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func fixJSONBeta(writer http.ResponseWriter, req *http.Request) {
-	switch req.Method {
-	case "POST":
-		_, err2 := fmt.Fprintf(writer, "{\"error\": \"Fix Json API beta version is currently not available. Please use public version.\"}")
-		if err2 != nil {
-			return
-		}
+func fixJSONBeta(writer http.ResponseWriter, _ *http.Request) {
+	_, err2 := fmt.Fprintf(writer, "{\"error\": \"Fix Json API beta version is currently not available. Please use public version.\"}")
+	if err2 != nil {
+		return
 	}
 }
 
