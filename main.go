@@ -67,6 +67,15 @@ func upload(writer http.ResponseWriter, req *http.Request) {
 
 		uploadSession.timeMap.data[sessionID] = SessionTimePair{time.Now().UnixMilli(), uploadSession.timeMap.data[sessionID].isCompleted}
 		uploadSession.dataMap.data[sessionID] = append(uploadSession.dataMap.data[sessionID], b...)
+		if len(uploadSession.dataMap.data[sessionID]) > 1024*1024*1024 {
+			_, err := fmt.Fprintf(writer, "Upload Failed: Too Large")
+			if err != nil {
+				return
+			}
+
+			delete(uploadSession.dataMap.data, sessionID)
+			errorHandler(writer, http.StatusMethodNotAllowed)
+		}
 
 		_, err := fmt.Fprintf(writer, "Success")
 		if err != nil {
@@ -91,6 +100,7 @@ func upload(writer http.ResponseWriter, req *http.Request) {
 		}
 
 		uploadSession.timeMap.data[sessionID] = SessionTimePair{uploadSession.timeMap.data[sessionID].latestUpload, true}
+		delete(uploadSession.dataMap.data, sessionID)
 
 		_, err2 := fmt.Fprintf(writer, "Upload Success")
 		if err2 != nil {
