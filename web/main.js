@@ -46,6 +46,16 @@ document.addEventListener("DOMContentLoaded", () => {
                                     uploadProgress.value = 0
                                     console.log(result)
                                 })
+                                .then(() => {
+                                    fetch(`/get_download/${sessionID}`, {
+                                        method: "GET"
+                                    })
+                                        .then((response) => response.text())
+                                        .then((result) => {
+                                            let url = `https://download.aef.kr/${result}`;
+                                            document.write(`Upload Success!<br>Download: <a href="${url}">${url}</a>`)
+                                        })
+                                })
                         }
                     }
                 })

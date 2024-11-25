@@ -92,11 +92,15 @@ func upload(writer http.ResponseWriter, req *http.Request) {
 
 		filename := fmt.Sprintf("./adofai%d.zip", millis)
 		err := os.WriteFile(filename, b, 0644)
-		go process(filename, millis)
+
+		downloadID := make(chan uint64)
+		go process(filename, millis, downloadID)
 
 		if err != nil {
 			println(err)
 		}
+
+		sessionIDMap.data[sessionID] = <-downloadID
 
 		uploadSession.timeMap.data[sessionID] = SessionTimePair{uploadSession.timeMap.data[sessionID].latestUpload, true}
 		delete(uploadSession.dataMap.data, sessionID)
@@ -138,8 +142,16 @@ type SessionTimeMap struct {
 	data map[int64]SessionTimePair
 }
 
+type SessionIDMap struct {
+	data map[int64]uint64
+}
+
 type SessionDataMap struct {
 	data map[int64]ByteArray
+}
+
+var sessionIDMap = &SessionIDMap{
+	data: make(map[int64]uint64),
 }
 
 var uploadSession = &SessionMapPair{
@@ -192,9 +204,40 @@ func getSession(writer http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func getDownload(writer http.ResponseWriter, req *http.Request) {
+	path := strings.Split(req.URL.Path, "/")
+	if len(path) != 3 {
+		errorHandler(writer, http.StatusBadRequest)
+		return
+	}
+
+	sessionID, err := strconv.ParseInt(path[2], 10, 64)
+	if err != nil {
+		errorHandler(writer, http.StatusBadRequest)
+		return
+	}
+
+	fmt.Println(sessionID)
+
+	var exists bool
+	if _, exists = sessionIDMap.data[sessionID]; !exists {
+		errorHandler(writer, http.StatusNotFound)
+		return
+	}
+
+	switch req.Method {
+	case "GET":
+		_, err := fmt.Fprintf(writer, "%d", sessionIDMap.data[sessionID])
+		if err != nil {
+			return
+		}
+	}
+}
+
 func main() {
 	http.HandleFunc("/", index)
 	http.HandleFunc("/get_session", getSession)
+	http.HandleFunc("/get_download/", getDownload)
 	http.HandleFunc("/upload/", upload)
 
 	http.HandleFunc("/main.js", mainScript)

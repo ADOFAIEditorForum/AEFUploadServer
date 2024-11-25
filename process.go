@@ -206,7 +206,7 @@ func removeDest(dest string) {
 }
 
 //goland:noinspection GoPreferNilSlice
-func process(filename string, id int64) {
+func process(filename string, id int64, downloadID chan uint64) {
 	dest := fmt.Sprintf("level%d", id)
 	println(filename)
 
@@ -412,6 +412,13 @@ func process(filename string, id int64) {
 	}
 
 	println(string(responseBody))
+	dID, err := strconv.ParseUint(uploadInfo["id"].(string), 10, 64)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	downloadID <- dID
 	directory := filepath.Join(dest, filepath.Dir(adofaiFileName))
 
 	go uploadAll(fmt.Sprintf("http://localhost:3677/upload/%s", uploadInfo["uploadID"]), directory, "")
