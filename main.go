@@ -66,7 +66,7 @@ func upload(writer http.ResponseWriter, req *http.Request) {
 
 		uploadSession.timeMap.data[sessionID] = SessionTimePair{time.Now().UnixMilli(), uploadSession.timeMap.data[sessionID].isCompleted}
 		uploadSession.dataMap.data[sessionID] = append(uploadSession.dataMap.data[sessionID], b...)
-		if len(uploadSession.dataMap.data[sessionID]) > 1024*1024*1024 {
+		if len(uploadSession.dataMap.data[sessionID]) > (1024*1024*1024)*3/2 { // 1.5GiB
 			_, err := fmt.Fprintf(writer, "Upload Failed: Too Large")
 			if err != nil {
 				return
