@@ -31,7 +31,12 @@ func detectADOFAIFile(destination string) string {
 	if len(files) == 1 && files[0].IsDir() {
 		fileName := files[0].Name()
 		target := filepath.Join(destination, fileName)
-		return filepath.Join(fileName, detectADOFAIFile(target))
+		result := detectADOFAIFile(target)
+		if result != "" {
+		    return filepath.Join(fileName, result)
+		}
+		
+		return ""
 	} else {
 		lowp_exists := ""
 		for _, file := range files {
