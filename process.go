@@ -17,7 +17,8 @@ import (
 	"strings"
 )
 
-var defaultFileList = []string{"level.adofai", "main.adofai"}
+var priority_high = []string{"level.adofai", "main.adofai"}
+var priority_low = []string{"backup.adofai"}
 
 func detectADOFAIFile(destination string) string {
 	adofaiFileName := ""
@@ -32,16 +33,50 @@ func detectADOFAIFile(destination string) string {
 		target := filepath.Join(destination, fileName)
 		return filepath.Join(fileName, detectADOFAIFile(target))
 	} else {
+		lowp_exists := ""
 		for _, file := range files {
 			name := file.Name()
 
-			if strings.HasSuffix(name, ".adofai") {
-				if slices.Contains(defaultFileList, name) {
+			if !file.IsDir() && strings.HasSuffix(name, ".adofai") {
+				if slices.Contains(priority_high, name) {
 					adofaiFileName = name
 					break
 				}
-				if adofaiFileName == "" && name != "backup.adofai" {
-					adofaiFileName = name
+
+				if !slices.Contains(priority_low, name) {
+					if adofaiFileName == "" {
+						adofaiFileName = name
+					}
+				} else {
+					for _, target := range priority_low {
+						if target == lowp_exists {
+							break
+						}
+
+						if target == name {
+							lowp_exists = name
+							break
+						}
+					}
+				}
+			}
+		}
+
+		if adofaiFileName == "" {
+			if lowp_exists != "" {
+				adofaiFileName = lowp_exists
+			} else {
+				for _, file := range files {
+					name := file.Name()
+					if file.IsDir() {
+						target := filepath.Join(destination, name)
+						result := detectADOFAIFile(target)
+
+						if result != "" {
+							adofaiFileName = filepath.Join(name, result)
+							break
+						}
+					}
 				}
 			}
 		}
