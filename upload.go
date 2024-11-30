@@ -84,7 +84,7 @@ func uploadFiles(link string, directory string, prefix string, client *http.Clie
 
 		mimeType := detectMIMEType(fileName)
 		if mimeType == "" {
-			println("Invalid File Type: " + fileName)
+			log.Println("Invalid File Type: " + fileName)
 			i++
 
 			continue
@@ -119,8 +119,7 @@ func uploadFiles(link string, directory string, prefix string, client *http.Clie
 			log.Fatal(err)
 		}
 
-		println(prefix + fileName)
-		println(string(responseBody))
+		log.Println(fmt.Sprintf("%s | %s", prefix + fileName, string(responseBody)))
 		if string(responseBody) == "Success" {
 			filesDetected++
 			// time.Sleep(10 * time.Millisecond)
@@ -151,7 +150,7 @@ func uploadFiles(link string, directory string, prefix string, client *http.Clie
 			log.Fatal(err)
 		}
 
-		println(string(responseBody))
+		log.Println(string(responseBody))
 
 		var uploadInfo map[string]interface{}
 		err = json.Unmarshal(responseBody, &uploadInfo)
